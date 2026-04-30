@@ -1,4 +1,4 @@
-easy & efficient translation tool for anyone
+easy & efficient translation tool
 
 supports OCR via api key
 

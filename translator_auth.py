@@ -995,7 +995,8 @@ class TranslatorApp:
 
     def _to_romaji(self):
         if KAKASI is None:
-            self.status.set("pykakasi not installed")
+            self.status.set("Romaji conversion unavailable (pykakasi not installed)")
+            self.root.after(3000, lambda: self.status.set(t(self.ui_lang, "ready")))
             return
         text = self.translated_text.get("1.0", tk.END).strip()
         if not text:
@@ -1003,14 +1004,19 @@ class TranslatorApp:
         has_ja = any('\u3040' <= c <= '\u309f' or '\u30a0' <= c <= '\u30ff' or '\u4e00' <= c <= '\u9fff' for c in text)
         if not has_ja:
             self.status.set("No Japanese text to convert")
+            self.root.after(2000, lambda: self.status.set(t(self.ui_lang, "ready")))
             return
-        result = KAKASI.convert(text)
-        romaji = " ".join([item["hepburn"] for item in result])
-        self.romaji_text.delete("1.0", tk.END)
-        self.romaji_text.insert("1.0", romaji)
-        self.romaji_text.pack(fill=tk.X, pady=(0, 6))
-        self.status.set("Converted to Romaji")
-        self.root.after(2000, lambda: self.status.set(t(self.ui_lang, "ready")))
+        try:
+            result = KAKASI.convert(text)
+            romaji = " ".join([item["hepburn"] for item in result])
+            self.romaji_text.delete("1.0", tk.END)
+            self.romaji_text.insert("1.0", romaji)
+            self.romaji_text.pack(fill=tk.X, pady=(0, 6))
+            self.status.set("Converted to Romaji")
+            self.root.after(3000, lambda: self.status.set(t(self.ui_lang, "ready")))
+        except Exception as e:
+            self.status.set(f"Romaji error: {e}")
+            self.root.after(3000, lambda: self.status.set(t(self.ui_lang, "ready")))
 
     def _create_tray(self):
         try:
@@ -1148,7 +1154,10 @@ class TranslatorApp:
         self.preview_photo = ImageTk.PhotoImage(img_resized)
         self.preview_canvas.delete("all")
         self.preview_canvas.create_image(0, 0, anchor="nw", image=self.preview_photo)
+        self.preview_canvas.config(height=new_size[1] if new_size[1] > 0 else 140)
         self.preview_frame.pack(fill=tk.X, pady=(0, 10))
+        self.preview_frame.lift()
+        self.root.update_idletasks()
         self.status.set(t(self.ui_lang, "region_selected"))
 
     def _confirm_ocr(self):

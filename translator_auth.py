@@ -702,7 +702,6 @@ class TranslatorApp:
         self.direction = tk.StringVar(value="ja-ru")
         self.formality = tk.StringVar(value="neutral")
         self.status = tk.StringVar(value=t(self.ui_lang, "ready"))
-        self.preview_image = None
         self.preview_photo = None
         self.history = load_history()
 
@@ -801,35 +800,8 @@ class TranslatorApp:
                                activebackground="#818cf8", cursor="hand2")
             self.ocr_btn.pack(side=tk.RIGHT)
 
-        self.preview_frame = tk.Frame(main, bg="#0f172a")
-        self.preview_frame.pack(fill=tk.X, pady=(0, 10))
-        self.preview_frame.pack_forget()
-
-        preview_header = tk.Frame(self.preview_frame, bg="#0f172a")
-        preview_header.pack(fill=tk.X)
-
-        self.preview_label = tk.Label(preview_header, text=t(self.ui_lang, "preview"), bg="#0f172a", fg="#818cf8",
-                font=("Segoe UI", 9, "bold"))
-        self.preview_label.pack(side=tk.LEFT)
-
-        self.preview_canvas = tk.Canvas(self.preview_frame, height=140, bg="#1e293b",
-                                       highlightthickness=0, bd=0)
-        self.preview_canvas.pack(fill=tk.X, pady=(4, 6))
-
-        preview_actions = tk.Frame(self.preview_frame, bg="#0f172a")
-        preview_actions.pack(fill=tk.X)
-
-        self.recognize_btn = tk.Button(preview_actions, text=t(self.ui_lang, "recognize"), command=self._confirm_ocr,
-                 bg="#10b981", fg="white", font=("Segoe UI", 9), bd=0, padx=12, pady=3,
-                 activebackground="#34d399", cursor="hand2")
-        self.recognize_btn.pack(side=tk.LEFT, padx=(0, 8))
-        self.cancel_ocr_btn = tk.Button(preview_actions, text=t(self.ui_lang, "cancel"), command=self._cancel_ocr,
-                 bg="#0f172a", fg="#ef4444", font=("Segoe UI", 9), bd=0, padx=8, pady=3,
-                 activebackground="#1e293b", cursor="hand2")
-        self.cancel_ocr_btn.pack(side=tk.LEFT)
-
         self.input_label = tk.Label(main, text=t(self.ui_lang, "input"), bg="#0f172a", fg="#818cf8",
-                              font=("Segoe UI", 9, "bold"))
+                               font=("Segoe UI", 9, "bold"))
         self.input_label.pack(anchor="w", pady=(0, 4))
 
         self.manual_text = tk.Text(main, height=4, wrap=tk.WORD, font=("Segoe UI", 11),
@@ -942,9 +914,6 @@ class TranslatorApp:
             self.ocr_btn.config(text=t(self.ui_lang, "select_area"))
         if self.provider != "public":
             self.form_label.config(text=t(self.ui_lang, "style"))
-        self.preview_label.config(text=t(self.ui_lang, "preview"))
-        self.recognize_btn.config(text=t(self.ui_lang, "recognize"))
-        self.cancel_ocr_btn.config(text=t(self.ui_lang, "cancel"))
         self.input_label.config(text=t(self.ui_lang, "input"))
         self.translate_btn.config(text=t(self.ui_lang, "translate"))
         self.clear_input_btn.config(text=t(self.ui_lang, "clear"))
@@ -1135,43 +1104,13 @@ class TranslatorApp:
             if x1 is None:
                 self.status.set(t(self.ui_lang, "cancelled"))
                 return
-            self.status.set(t(self.ui_lang, "capturing"))
-            self.root.update_idletasks()
+            self.status.set(t(self.ui_lang, "recognizing"))
             with mss.mss() as sct:
                 monitor = {"top": y1, "left": x1, "width": x2-x1, "height": y2-y1}
                 screenshot_data = sct.grab(monitor)
                 screenshot = Image.frombytes("RGB", screenshot_data.size, screenshot_data.rgb)
-            self.preview_image = screenshot
-            self._show_preview(screenshot)
+            threading.Thread(target=self._ocr_thread, args=(screenshot,), daemon=True).start()
         self.root.after(100, lambda: RegionSelector(on_region_selected))
-
-    def _show_preview(self, image):
-        max_w, max_h = 810, 110
-        img_w, img_h = image.size
-        ratio = min(max_w/img_w, max_h/img_h, 1)
-        new_size = (int(img_w * ratio), int(img_h * ratio))
-        img_resized = image.resize(new_size, Image.Resampling.LANCZOS)
-        self.preview_photo = ImageTk.PhotoImage(img_resized)
-        self.preview_canvas.delete("all")
-        self.preview_canvas.create_image(0, 0, anchor="nw", image=self.preview_photo)
-        self.preview_canvas.config(height=new_size[1] if new_size[1] > 0 else 140)
-        self.preview_frame.pack(fill=tk.X, pady=(0, 10))
-        self.preview_frame.lift()
-        self.root.update_idletasks()
-        self.status.set(t(self.ui_lang, "region_selected"))
-
-    def _confirm_ocr(self):
-        if self.preview_image is None:
-            return
-        self.preview_frame.pack_forget()
-        self.status.set(t(self.ui_lang, "recognizing"))
-        threading.Thread(target=self._ocr_thread, args=(self.preview_image,), daemon=True).start()
-        self.preview_image = None
-
-    def _cancel_ocr(self):
-        self.preview_frame.pack_forget()
-        self.preview_image = None
-        self.status.set(t(self.ui_lang, "cancelled"))
 
     def _ocr_thread(self, image):
         try:

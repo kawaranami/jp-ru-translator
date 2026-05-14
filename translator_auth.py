@@ -17,66 +17,28 @@ try:
 except:
     GoogleTranslator = None
 
-VERSION = "0.2.4"
+try:
+    import pykakasi
+    _kakasi = pykakasi.kakasi()
+except ImportError:
+    _kakasi = None
 
-HIRAGANA_ROMAJI = {
-    'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o',
-    'か': 'ka', 'き': 'ki', 'く': 'ku', 'け': 'ke', 'こ': 'ko',
-    'さ': 'sa', 'し': 'shi', 'す': 'su', 'せ': 'se', 'そ': 'so',
-    'た': 'ta', 'ち': 'chi', 'つ': 'tsu', 'て': 'te', 'と': 'to',
-    'な': 'na', 'に': 'ni', 'ぬ': 'nu', 'ね': 'ne', 'の': 'no',
-    'は': 'ha', 'ひ': 'hi', 'ふ': 'fu', 'へ': 'he', 'ほ': 'ho',
-    'ま': 'ma', 'み': 'mi', 'む': 'mu', 'め': 'me', 'も': 'mo',
-    'や': 'ya', 'ゆ': 'yu', 'よ': 'yo',
-    'ら': 'ra', 'り': 'ri', 'る': 'ru', 'れ': 're', 'ろ': 'ro',
-    'わ': 'wa', 'を': 'wo', 'ん': 'n',
-    'が': 'ga', 'ぎ': 'gi', 'ぐ': 'gu', 'げ': 'ge', 'ご': 'go',
-    'ざ': 'za', 'じ': 'ji', 'ず': 'zu', 'ぜ': 'ze', 'ぞ': 'zo',
-    'だ': 'da', 'ぢ': 'ji', 'づ': 'zu', 'で': 'de', 'ど': 'do',
-    'ば': 'ba', 'び': 'bi', 'ぶ': 'bu', 'べ': 'be', 'ぼ': 'bo',
-    'ぱ': 'pa', 'ぴ': 'pi', 'ぷ': 'pu', 'ぺ': 'pe', 'ぽ': 'po',
-}
+VERSION = "0.2.5"
 
-KATAKANA_ROMAJI = {
-    'ア': 'a', 'イ': 'i', 'ウ': 'u', 'エ': 'e', 'オ': 'o',
-    'カ': 'ka', 'キ': 'ki', 'ク': 'ku', 'ケ': 'ke', 'コ': 'ko',
-    'サ': 'sa', 'シ': 'shi', 'ス': 'su', 'セ': 'se', 'ソ': 'so',
-    'タ': 'ta', 'チ': 'chi', 'ツ': 'tsu', 'テ': 'te', 'ト': 'to',
-    'ナ': 'na', 'ニ': 'ni', 'ヌ': 'nu', 'ネ': 'ne', 'ノ': 'no',
-    'ハ': 'ha', 'ヒ': 'hi', 'フ': 'fu', 'ヘ': 'he', 'ホ': 'ho',
-    'マ': 'ma', 'ミ': 'mi', 'ム': 'mu', 'メ': 'me', 'モ': 'mo',
-    'ヤ': 'ya', 'ユ': 'yu', 'ヨ': 'yo',
-    'ラ': 'ra', 'リ': 'ri', 'ル': 'ru', 'レ': 're', 'ロ': 'ro',
-    'ワ': 'wa', 'ヲ': 'wo', 'ン': 'n',
-    'ガ': 'ga', 'ギ': 'gi', 'グ': 'gu', 'ゲ': 'ge', 'ゴ': 'go',
-    'ザ': 'za', 'ジ': 'ji', 'ズ': 'zu', 'ゼ': 'ze', 'ゾ': 'zo',
-    'ダ': 'da', 'ヂ': 'ji', 'ヅ': 'zu', 'デ': 'de', 'ド': 'do',
-    'バ': 'ba', 'ビ': 'bi', 'ブ': 'bu', 'ベ': 'be', 'ボ': 'bo',
-    'パ': 'pa', 'ピ': 'pi', 'プ': 'pu', 'ペ': 'pe', 'ポ': 'po',
-}
 
 def text_to_romaji(text):
-    result = []
-    i = 0
-    while i < len(text):
-        c = text[i]
-        if c in HIRAGANA_ROMAJI:
-            result.append(HIRAGANA_ROMAJI[c])
-        elif c in KATAKANA_ROMAJI:
-            result.append(KATAKANA_ROMAJI[c])
-        elif c == 'ー':
-            if result:
-                result[-1] += result[-1][-1]
-        elif c in '.,!?;:()[]{}""''':
-            result.append(c)
-        elif c == ' ':
-            result.append(' ')
-        elif '\u4e00' <= c <= '\u9fff':
-            result.append(c)
-        else:
-            result.append(c)
-        i += 1
-    return ' '.join(result)
+    """Convert Japanese text (kanji, hiragana, katakana) to romaji using pykakasi."""
+    if _kakasi is None:
+        return "[pykakasi not installed] pip install pykakasi"
+    try:
+        result = _kakasi.convert(text)
+        parts = []
+        for item in result:
+            hepburn = item.get('hepburn', '') or item.get('passport', '') or item['orig']
+            parts.append(hepburn)
+        return ' '.join(parts)
+    except Exception as e:
+        return f"[romaji error: {e}]"
 
 LANG = {
     "ja": {
@@ -371,9 +333,10 @@ def translate_text(text, source, target, formality="default"):
 
 def save_config(provider, api_key, ocr_key, save_key):
     try:
-        config = {}
+        config = {"provider": provider}
         if save_key:
-            config = {"provider": provider, "api_key": api_key, "ocr_key": ocr_key}
+            config["api_key"] = api_key
+            config["ocr_key"] = ocr_key
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(config, f, ensure_ascii=False, indent=2)
     except:
@@ -455,10 +418,6 @@ class AuthWindow:
         self.provider_label = tk.Label(translate_inner, text=t(self.ui_lang, "provider"),
                                        bg="#1e293b", fg="#64748b", font=("Segoe UI", 9))
         self.provider_label.pack(anchor="w", padx=(12, 0), pady=(8, 4))
-
-        self.translate_provider = tk.StringVar(value="deepl")
-        provider_frame = tk.Frame(translate_inner, bg="#1e293b")
-        provider_frame.pack(fill=tk.X, padx=(12, 0), pady=(0, 8))
 
         self.provider_var = tk.StringVar(value="public")
         provider_frame = tk.Frame(translate_inner, bg="#1e293b")
@@ -604,7 +563,6 @@ class AuthWindow:
         ocr_frame.config(text=t(self.ui_lang, "ocr_section"))
         self.ocr_key_label.config(text=t(self.ui_lang, "ocr_key_label"))
         self.confirm_btn.config(text=t(self.ui_lang, "confirm"))
-        self.skip_ocr_btn.config(text=t(self.ui_lang, "skip_ocr"))
 
     def _add_right_click_menu(self, widget):
         menu = tk.Menu(widget, tearoff=False, bg="#1e293b", fg="#e2e8f0", activebackground="#6366f1")
@@ -760,11 +718,10 @@ class TranslatorApp:
         self._setup_styles()
         self._build_ui()
 
-        import keyboard
+        # Use tkinter bindings instead of global keyboard hooks
         if has_ocr:
-            keyboard.add_hotkey("ctrl+t", self.start_region_select)
-        keyboard.add_hotkey("ctrl+d", self.switch_direction)
-        keyboard.add_hotkey("ctrl+c", self.copy_translation)
+            self.root.bind("<Control-t>", lambda e: self.start_region_select())
+        self.root.bind("<Control-d>", lambda e: self.switch_direction())
 
         self.root.protocol("WM_DELETE_WINDOW", self.quit_app)
         self._create_tray()
@@ -1034,7 +991,12 @@ class TranslatorApp:
         try:
             from infi.systray import SysTrayIcon
             base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+            # Try .ico first (Windows), fall back to .png
             icon_path = os.path.join(base_path, 'neko_icon.ico')
+            if not os.path.exists(icon_path):
+                icon_path = os.path.join(base_path, 'icon.png')
+            if not os.path.exists(icon_path):
+                icon_path = None
             menu_items = [(t(self.ui_lang, "app_title"), self.show_window), ("Exit", self.quit_app)]
             self.tray = SysTrayIcon(icon_path, t(self.ui_lang, "app_title"), menu_items)
             self.tray.start()
@@ -1095,10 +1057,15 @@ class TranslatorApp:
             
             if direction == "ru-ja":
                 reverse = translate_text(result, "ja", "ru", formality)
-                formality_info = self._analyze_formality(result)
+                # For ru→ja we already know the style — it's what user selected
+                formality_info = t(self.ui_lang, f"style_{('casual' if formality == 'less' else 'formal' if formality == 'more' else 'neutral')}")
             else:
                 reverse = translate_text(result, "ru", "ja", "default")
-                formality_info = self._analyze_formality(result)
+                # Only call _analyze_formality for DeepL (other providers ignore formality param)
+                if TRANSLATE_PROVIDER == "deepl":
+                    formality_info = self._analyze_formality(result)
+                else:
+                    formality_info = ""
 
             self.history.insert(0, {
                 "source": text,
@@ -1203,10 +1170,13 @@ class TranslatorApp:
             
             if direction == "ru-ja":
                 reverse = translate_text(result, "ja", "ru", formality)
-                formality_info = self._analyze_formality(result)
+                formality_info = t(self.ui_lang, f"style_{('casual' if formality == 'less' else 'formal' if formality == 'more' else 'neutral')}")
             else:
                 reverse = translate_text(result, "ru", "ja", "default")
-                formality_info = self._analyze_formality(result)
+                if TRANSLATE_PROVIDER == "deepl":
+                    formality_info = self._analyze_formality(result)
+                else:
+                    formality_info = ""
             self.history.insert(0, {
                 "source": original,
                 "target": result,

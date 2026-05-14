@@ -378,6 +378,18 @@ class AuthWindow:
         self.root.resizable(False, False)
         self.root.configure(bg="#0f172a")
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+
+        # Set window icon
+        try:
+            base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+            icon_path = os.path.join(base_path, 'icon.png')
+            if os.path.exists(icon_path):
+                icon_img = ImageTk.PhotoImage(Image.open(icon_path).resize((32, 32), Image.Resampling.LANCZOS))
+                self.root.iconphoto(True, icon_img)
+                self._icon_ref = icon_img
+        except:
+            pass
+
         self.saved_config = load_config()
         self._build_ui()
 
@@ -708,6 +720,17 @@ class TranslatorApp:
         self.root.resizable(False, False)
         self.root.configure(bg="#0f172a")
 
+        # Set window icon
+        try:
+            base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+            icon_path = os.path.join(base_path, 'icon.png')
+            if os.path.exists(icon_path):
+                icon_img = ImageTk.PhotoImage(Image.open(icon_path).resize((32, 32), Image.Resampling.LANCZOS))
+                self.root.iconphoto(True, icon_img)
+                self._icon_ref = icon_img  # prevent garbage collection
+        except:
+            pass
+
         self.has_ocr = has_ocr
         self.direction = tk.StringVar(value="ja-ru")
         self.formality = tk.StringVar(value="neutral")
@@ -822,17 +845,17 @@ class TranslatorApp:
         input_actions = tk.Frame(main, bg="#0f172a")
         input_actions.pack(fill=tk.X, pady=(0, 12))
 
-        self.translate_btn = tk.Button(input_actions, text=t(self.ui_lang, "translate"), command=self.translate_manual,
-                 bg="#6366f1", fg="white", font=("Segoe UI", 9), bd=0, padx=12, pady=3,
+        self.translate_btn = tk.Button(input_actions, text="\u25B6 " + t(self.ui_lang, "translate"), command=self.translate_manual,
+                 bg="#6366f1", fg="white", font=("Segoe UI", 9, "bold"), bd=0, padx=14, pady=5,
                  activebackground="#818cf8", cursor="hand2")
         self.translate_btn.pack(side=tk.LEFT, padx=(0, 6))
-        self.clear_input_btn = tk.Button(input_actions, text=t(self.ui_lang, "clear"), command=lambda: self.manual_text.delete("1.0", tk.END),
-                 bg="#0f172a", fg="#64748b", font=("Segoe UI", 9), bd=0, padx=6, pady=3,
-                 activebackground="#1e293b", cursor="hand2")
+        self.clear_input_btn = tk.Button(input_actions, text="\u2715 " + t(self.ui_lang, "clear"), command=lambda: self.manual_text.delete("1.0", tk.END),
+                 bg="#1e293b", fg="#94a3b8", font=("Segoe UI", 9), bd=0, padx=10, pady=5,
+                 activebackground="#334155", cursor="hand2")
         self.clear_input_btn.pack(side=tk.LEFT, padx=(0, 6))
-        self.switch_dir_btn = tk.Button(input_actions, text=t(self.ui_lang, "switch_dir"), command=self.switch_direction,
-                 bg="#0f172a", fg="#64748b", font=("Segoe UI", 9), bd=0, padx=6, pady=3,
-                 activebackground="#1e293b", cursor="hand2")
+        self.switch_dir_btn = tk.Button(input_actions, text="\u21C4 " + t(self.ui_lang, "switch_dir"), command=self.switch_direction,
+                 bg="#1e293b", fg="#94a3b8", font=("Segoe UI", 9), bd=0, padx=10, pady=5,
+                 activebackground="#334155", cursor="hand2")
         self.switch_dir_btn.pack(side=tk.LEFT)
 
         self.results_label = tk.Label(main, text=t(self.ui_lang, "result"), bg="#0f172a", fg="#818cf8",
@@ -854,12 +877,12 @@ class TranslatorApp:
         romaji_frame = tk.Frame(main, bg="#0f172a")
         romaji_frame.pack(fill=tk.X, pady=(0, 6))
 
-        self.romaji_btn = tk.Button(romaji_frame, text=t(self.ui_lang, "romaji"), command=self._to_romaji,
-                 bg="#0f172a", fg="#818cf8", font=("Segoe UI", 9), bd=0, padx=12, pady=3,
-                 activebackground="#1e293b", cursor="hand2")
+        self.romaji_btn = tk.Button(romaji_frame, text="\u3042\u2192A " + t(self.ui_lang, "romaji"), command=self._to_romaji,
+                 bg="#1e293b", fg="#818cf8", font=("Segoe UI", 9), bd=0, padx=12, pady=4,
+                 activebackground="#334155", cursor="hand2")
         self.romaji_btn.pack(side=tk.LEFT)
-        self.romaji_btn.bind("<Enter>", lambda e: self.romaji_btn.config(fg="#a5b4fc"))
-        self.romaji_btn.bind("<Leave>", lambda e: self.romaji_btn.config(fg="#818cf8"))
+        self.romaji_btn.bind("<Enter>", lambda e: self.romaji_btn.config(bg="#334155", fg="#a5b4fc"))
+        self.romaji_btn.bind("<Leave>", lambda e: self.romaji_btn.config(bg="#1e293b", fg="#818cf8"))
 
         self.romaji_text = tk.Text(main, height=2, wrap=tk.WORD, font=("Segoe UI", 9),
                                   bg="#0f172a", fg="#64748b", bd=0, highlightthickness=0,
@@ -886,9 +909,9 @@ class TranslatorApp:
                 font=("Segoe UI", 9, "bold"))
         self.history_label.pack(side=tk.LEFT)
 
-        self.clear_history_btn = tk.Button(history_header, text=t(self.ui_lang, "clear_history"), command=self._clear_history,
-                  bg="#0f172a", fg="#ef4444", font=("Segoe UI", 9), bd=0, padx=8, pady=2,
-                 activebackground="#1e293b", cursor="hand2")
+        self.clear_history_btn = tk.Button(history_header, text="\u2715 " + t(self.ui_lang, "clear_history"), command=self._clear_history,
+                  bg="#1e293b", fg="#ef4444", font=("Segoe UI", 9), bd=0, padx=10, pady=3,
+                 activebackground="#334155", cursor="hand2")
         self.clear_history_btn.pack(side=tk.RIGHT)
 
         self.history_frame = tk.Frame(main, bg="#0f172a")
@@ -924,13 +947,13 @@ class TranslatorApp:
         if self.provider != "public":
             self.form_label.config(text=t(self.ui_lang, "style"))
         self.input_label.config(text=t(self.ui_lang, "input"))
-        self.translate_btn.config(text=t(self.ui_lang, "translate"))
-        self.clear_input_btn.config(text=t(self.ui_lang, "clear"))
-        self.switch_dir_btn.config(text=t(self.ui_lang, "switch_dir"))
-        self.romaji_btn.config(text=t(self.ui_lang, "romaji"))
+        self.translate_btn.config(text="\u25B6 " + t(self.ui_lang, "translate"))
+        self.clear_input_btn.config(text="\u2715 " + t(self.ui_lang, "clear"))
+        self.switch_dir_btn.config(text="\u21C4 " + t(self.ui_lang, "switch_dir"))
+        self.romaji_btn.config(text="\u3042\u2192A " + t(self.ui_lang, "romaji"))
         self.results_label.config(text=t(self.ui_lang, "result"))
         self.history_label.config(text=t(self.ui_lang, "history"))
-        self.clear_history_btn.config(text=t(self.ui_lang, "clear_history"))
+        self.clear_history_btn.config(text="\u2715 " + t(self.ui_lang, "clear_history"))
         self.status.set(t(self.ui_lang, "ready"))
         self._update_history_display()
 
